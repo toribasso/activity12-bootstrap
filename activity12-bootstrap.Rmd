@@ -1,0 +1,219 @@
+---
+title: "Activity 12"
+author: "Name"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(error = TRUE)
+```
+
+
+## Set-up
+
+In this activity you will be bootstrapping - a form of statistical inference that uses resampling methods.
+First, you will need `{tidyverse}` and `{infer}`.
+
+
+### Data
+
+In this Activity, you analyze data from the 2016 General Social Survey (GSS), using it to estimate values of population parameters of interest about US adults.
+The GSS gathers data on contemporary American society in order to monitor and explain trends and constants in attitudes, behaviors, and attributes.
+The public release of this data contains 935 variables and 2,867 observations.
+This is not a massive data set, but it is a fairly large that we need to consider how we handle it in our workflow.
+
+The size of the data file we're working with it 33.4 MB (the professor evaluations data was 45KB) which means the GSS data is a little over 750 times the size of the evaluations data.
+That's a big difference!
+
+GitHub will produce a warning when you push files larger than 50 MB, and it will not allow files larger than 100 MB (see [GitHub Help - Working with large files](https://help.github.com/articles/working-with-large-files/)).
+While this file is smaller than both of these limits, it's still large enough to consider not pushing to GitHub.
+Therefore, I have uploaded this dataset in the SharedProjects area on RStudio Server.
+
+Again, this is where the `.gitignore` file comes into play.
+If you open the `.gitignore` file in your Activity repo, you'll see that the data file, `gss2016.csv`, is already listed there.
+
+- Locate the `gss2016.csv` in `SharedProjects/dykesb/sta518/activity1102-data/`.
+- Copy this file to a `data` folder in your RStudio Server project - you will need to create this folder in your project.
+- Note that even though you made a change in your files by adding the data, `gss2016.csv` does not appear in your Git pane. This is because it's being ignored by git (you can verify this by looking at line 6 of the `.gitignore` file).
+
+Below is a `load-data` R chunk that reads in this file.
+
+```{r load-data, message=FALSE}
+gss <- read_csv(here::here("data", "gss2016.csv"),
+                na = c("", "Dont know", "Don't know",
+                       "No answer", "Not applicable", "NA"),
+               guess_max = 2867) %>%
+  select(harass5, educ, born, polviews, advfront)
+```
+
+Notice that this chunk does three things:
+
+1. `na = c(...)`: I specified some additional values that `read_csv` should treat as missing values.
+2. `guess_max`: In the documentation for `read_csv` you see that the function uses the first 1,000 observations from a data frame to determine the classes of each variable. However, in this data frame, we have numeric data within the first 1,000 rows, but then something like `"8 or more"` in later rows. Therefore, without specifically telling R to scan all rows to determine the variable class, we would end up with some warnings when loading the data (`Warning: One or more parsing issues`). Feel free to experiment with this by removing the `guess_max` argument.
+3. `select`: In this Activity, I know which variables you will be using from the data, so I simply select those to help focus your work. This is extremely helpful when working with large data sets. Now, you might be wondering how you would know ahead of time which variables you will be working with. Valid and you probably won't know. However, once you make up your mind, you can always go back and add a `select` so that from that point on you can benefit from faster computation in your analysis.
+
+## Education
+
+Our variable of interest for this Activity is going to be `educ` which is the number of years of education the respondent has completed.
+Plot a histogram of `educ` with an overlaying density.
+Comment on the center, spread, and shape.
+
+
+
+
+**Response**:
+
+
+Suppose we're interested in making inference about the typical number of years of education that a person has completed and this is our representative sample.
+Is the mean a good statistic to use here to describe the typical value of salary?
+Why or why not?
+
+**Response**:
+
+
+Recall from your introductory statistics course that a one-sample *t*-test requires that the sample mean is Normally distributed.
+Does this assumption seem reasonable for the mean number of years of education?
+Why or why not?
+
+***Response**:
+
+
+Since our sample size is so large, the distribution of the *sample mean* is approximately Normal (the CLT!).
+The `t.test` function can be used to do a one-sample *t*-test and to find a 90% confidence interval for the mean number of years of education that US adults complete.
+Use this function to construct a 90% confidence interval for the mean number of years of education that US adults complete.
+
+
+
+
+**Response**:
+
+
+### Bootstrapping
+
+Before we get too far, there are a number of missing values within `gss$educ`.
+In order to make sure that we are bootstrapping observations for which we have data, we will first filter for non-`NA` values and create a new data frame.
+
+```{r gss-educ}
+gss_educ <- gss %>%
+  filter(!is.na(educ)) %>% 
+  select(educ)
+```
+
+From your readings, you saw how to use computer simulations of resampling (using `infer::rep_sample_n`) to construct 1,000 bootstrap samples.
+For example, we could do:
+
+```
+boot_educ <- gss_educ %>%
+  rep_sample_n(size = nrow(gss_educ),
+               replace = TRUE,
+               reps = 1000)
+```
+
+We take *samples* of the same size as the original from the original sample, then *repeat* this process many (say, 1,000) times.
+Then, using these 1,000 bootstrap samples, we can then calculate the `mean_educ` for each replication:
+
+```
+boot_educ_means <- boot_educ %>% 
+  group_by(replicate) %>% 
+  summarise(mean_educ = mean(educ))
+```
+
+The `{infer}` package is great, but let's test your coding skills and see if you can do this using different functions (similar to what you did in Activity 11).
+Using `sample` and one of: (`replicate`, `purrr:rerun`, or `purrr::map`), generate 1,000 bootstrap samples.
+Then, use the appropriate `purrr::map` function to calculate the mean for each of the bootstrap samples.
+The last thing you want is those samples to change every time you knit your document because your interpretations might be slightly different so you will need to set a seed that is your birthday in `yymmdd` format (your instructor's seed would be set to the number `851217`).
+
+
+
+
+
+Now, use the `quantile` function with appropriate `probs` to get construct a 90% bootstrap confidence interval for the mean number of years of education that US adults complete.
+You will need to give some thought about what the lower and upper quantiles would be to identify the middle 90%.
+
+
+
+
+
+Compare this bootstrap interval to your `t.test` confidence interval from above.
+
+
+
+## Challenge: Other statistics
+
+Since the distribution of `educ` is skewed, there may be other statistics that are better at describing the typical number of years of education completed by US adults.
+Write your a function that when supplied with a sample vector, obtains 1,000 bootstrapped values for each of these measures of center:
+
+- Mean
+- Median
+- Midhinge
+
+It might be easiest to aim for each measure of center being outputted in a column.
+That is, your final dataframe would look like:
+
+```
+# A tibble: 1,000 x 3
+      mean  median  midhinge
+     <dbl>   <dbl>     <dbl>
+ 1     ...     ...       ...
+ ...   ...     ...       ...
+ 1000  ...     ...       ...
+```
+Then, restructure this dataframe to create a faceted plot that displays histograms for each measure on center.
+You should assign this restructured dataframe to an R object to help you with the next task.
+
+
+
+
+Using this restructured dataframe, compute 90% bootstrap confidence intervals *for each* statistics.
+For each, compare to your interval to the bootstrap interval for the *mean* that you computed first. 
+
+
+
+
+Which of these statistics do you think is the best statistic to describe the number of years of education?
+Why?
+There is no single right answer to this question.
+Think about what each statistic is measuring, and decide whether that makes sense for this data.
+
+**Response**:
+
+
+
+## Liberals vs. Conservatives - Is science research necessary?
+
+The 2016 GSS also asked respondents whether they think of themselves as liberal or conservative (`polviews`) and whether they think science research is necessary and should be supported by the federal government (`advfront`).
+
+The question on science research is worded as follows:
+
+> Even if it brings no immediate benefits, scientific research that advances the frontiers of knowledge is necessary and should be supported by the federal government.
+
+Possible responses to this question are "Strongly agree", "Agree", "Disagree", "Strongly disagree", "Dont know", "No answer", "Not applicable".
+
+The question on political views is worded as follows:
+
+> We hear a lot of talk these days about liberals and conservatives. I'm going to show you a seven-point scale on which the political views that people might hold are arranged from extremely liberal--point 1--to extremely conservative--point 7. Where would you place yourself on this scale?
+  
+Possible responses to this question are "Extremely liberal", "Liberal", "Slightly liberal", "Moderate", "Slghtly conservative", "Conservative", "Extrmly conservative".
+
+Responses that were originally "Don't know", "No answer", and "Not applicable" are already converted to `NA`s (we did this in the data import).
+Also, note that the levels of this variables are spelled inconsistently: "Extremely liberal" vs. "Extrmly conservative" and "Slightly liberal" vs. "Slghtly conservative".
+
+Since this is the spelling that shows up in the data, you need to make sure this is how you spell the levels in your code (quick) **OR** correct it in the data file (preferred).
+
+1. Create a new variable, i.e., recode `advfront` values, such that "Strongly agree" and "Agree" are converted to `"Yes"`, and "Disagree" and "Strongly disagree" are converted to `"No"`. The remaining levels can be left as is.
+
+2. Create a new variable, i.e., recode `polviews values`, such that "Extremely liberal", "Liberal", and "Slightly liberal", are converted to `"Liberal"`, and "Slghtly conservative", "Conservative", and "Extrmly conservative" are converted to `"Conservative"`. The remaining levels can be left as is.
+
+3. Filter the data for respondents who self-identified as "liberal" or "conservative" and who responded "yes" or "no" to the science research question. Save the resulting data frame with a different name so that you don't overwrite the data.
+
+4. Describe how you will use bootstrapping to estimate the difference in proportion of liberals and not liberals who think science research is necessary and should be supported by the federal government.
+
+5. Construct a 90% bootstrap confidence interval for the difference in proportion of liberals and conservatives who think science research is necessary and should be supported by the federal government. Interpret this interval in context of the data.
+
+
+
+
+
+## Attribution
+
+This activity is based on labs by [Mine Çetinkaya-Rundel](https://www2.stat.duke.edu/courses/Spring18/Sta199/) and [Kelly Bodwin](https://www.kelly-bodwin.com/about/).
