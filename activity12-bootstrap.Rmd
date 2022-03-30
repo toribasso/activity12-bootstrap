@@ -58,34 +58,43 @@ Our variable of interest for this Activity is going to be `educ` which is the nu
 Plot a histogram of `educ` with an overlaying density.
 Comment on the center, spread, and shape.
 
+```{r histofeduc}
+ggplot(gss, aes(x = educ)) + 
+  geom_histogram(aes(y = ..density..),
+                 colour = 1, fill = "white") +
+  geom_density()
+```
 
 
-
-**Response**:
-
+**Response**: It seems like there are two main peaks in this data with one at 13 and another at 17.
+This makes sense at it would alight with a high school education and a Bachlors degree. The center
+seems to be around 13-14 and the spread is between 6 and 20.
 
 Suppose we're interested in making inference about the typical number of years of education that a person has completed and this is our representative sample.
 Is the mean a good statistic to use here to describe the typical value of salary?
 Why or why not?
 
-**Response**:
-
+**Response**: This is not a good statistic to determine the typical number of years. The mode or
+most frequent values would be better to identify this. Mean would be a bad measure because 
+it would be skewed to a value like 14 that would not be representative of what you are trying
+to determine.
 
 Recall from your introductory statistics course that a one-sample *t*-test requires that the sample mean is Normally distributed.
 Does this assumption seem reasonable for the mean number of years of education?
 Why or why not?
 
-***Response**:
-
+***Response**: No, it has two peaks, right skewed and does not resemble a bell curve at all.
 
 Since our sample size is so large, the distribution of the *sample mean* is approximately Normal (the CLT!).
 The `t.test` function can be used to do a one-sample *t*-test and to find a 90% confidence interval for the mean number of years of education that US adults complete.
 Use this function to construct a 90% confidence interval for the mean number of years of education that US adults complete.
 
+```{r ttest}
+t.test(gss$educ, conf.level=.90)
+```
 
 
-
-**Response**:
+**Response**: The 90% CI is (13.64601,13.82845).
 
 
 ### Bootstrapping
@@ -123,20 +132,28 @@ Using `sample` and one of: (`replicate`, `purrr:rerun`, or `purrr::map`), genera
 Then, use the appropriate `purrr::map` function to calculate the mean for each of the bootstrap samples.
 The last thing you want is those samples to change every time you knit your document because your interpretations might be slightly different so you will need to set a seed that is your birthday in `yymmdd` format (your instructor's seed would be set to the number `851217`).
 
+library(purrr)
+```{r bootstrap}
+sapply(gss_educ, is.numeric)
+set.seed(970930)
+boot_educ <- rerun(1000, gss_educ$educ) %>%
+map_dbl(mean)
 
-
-
+```
 
 Now, use the `quantile` function with appropriate `probs` to get construct a 90% bootstrap confidence interval for the mean number of years of education that US adults complete.
 You will need to give some thought about what the lower and upper quantiles would be to identify the middle 90%.
 
-
-
+```{r quantile}
+CI90 <- quantile(boot_educ,probs=seq(.05,.95))
+```
 
 
 Compare this bootstrap interval to your `t.test` confidence interval from above.
 
-
+**Response**: It is indicated that the 90% confidence interval for the bootstrap is the same number, 13.7.
+This indicates that we are very confident that the mean is around 13.7 for this data if replicated
+1000 times.
 
 ## Challenge: Other statistics
 
