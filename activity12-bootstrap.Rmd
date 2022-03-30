@@ -14,6 +14,8 @@ knitr::opts_chunk$set(error = TRUE)
 In this activity you will be bootstrapping - a form of statistical inference that uses resampling methods.
 First, you will need `{tidyverse}` and `{infer}`.
 
+library(tidyverse)
+library(infer)
 
 ### Data
 
@@ -40,9 +42,7 @@ Below is a `load-data` R chunk that reads in this file.
 
 ```{r load-data, message=FALSE}
 gss <- read_csv(here::here("data", "gss2016.csv"),
-                na = c("", "Dont know", "Don't know",
-                       "No answer", "Not applicable", "NA"),
-               guess_max = 2867) %>%
+                na = c("", "Dont know", "Don't know", "No answer", "Not applicable", "NA"), guess_max = 2867) %>%
   select(harass5, educ, born, polviews, advfront)
 ```
 
